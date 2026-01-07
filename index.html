@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickOrder - Skip the Line</title>
+    <!-- Import html2pdf for reliable PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #27ae60;
+            --dark: #2c3e50;
+            --light: #f4f7f6;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 15px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 500px; margin: auto; }
+        
+        h2 { color: var(--dark); margin-bottom: 5px; font-size: 24px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+
+        .menu-section { margin-bottom: 30px; }
+        .item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 0; 
+            border-bottom: 1px solid #f0f0f0; 
+        }
+        .item-info { flex-grow: 1; }
+        .item-name { font-weight: 600; color: var(--dark); display: block; }
+        .item-price { color: #27ae60; font-size: 14px; }
+
+        .qty-controls { display: flex; align-items: center; gap: 10px; }
+        .btn-qty { 
+            background: #eee; border: none; width: 30px; height: 30px; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; 
+        }
+        .btn-qty:hover { background: #ddd; }
+
+        .cart-box { 
+            background: #fdfdfd; 
+            border: 2px dashed #ddd; 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin: 20px 0;
+            display: none;
+        }
+        .cart-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .cart-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+
+        .total-row { 
+            display: flex; justify-content: space-between; 
+            margin-top: 15px; padding-top: 10px; border-top: 2px solid #eee; 
+            font-size: 18px; font-weight: bold; color: var(--dark);
+        }
+
+        .input-group { margin-top: 15px; }
+        input { 
+            width: 100%; padding: 12px; margin-top: 8px; 
+            border: 1px solid #ddd; border-radius: 10px; 
+            box-sizing: border-box; font-size: 16px;
+        }
+
+        .btn-order { 
+            background: var(--primary); color: white; border: none; width: 100%; 
+            padding: 18px; border-radius: 12px; font-size: 18px; font-weight: bold; 
+            margin-top: 25px; cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-order:disabled { background: #95a5a6; cursor: not-allowed; }
+        
+        /* Receipt Modal Styling */
+        #receipt-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .receipt-content {
+            background: white;
+            padding: 30px;
+            border-radius: 0; /* Traditional receipt look */
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        .receipt-header { border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .receipt-items { text-align: left; font-family: monospace; margin-bottom: 20px; }
+        .receipt-footer { border-top: 2px dashed #000; padding-top: 10px; font-size: 14px; margin-top: 20px; }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-action {
+            background: #34495e; color: white; border: none; padding: 10px 15px;
+            border-radius: 5px; cursor: pointer; font-size: 14px;
+        }
+        
+        .btn-download { background: #2980b9; }
+        .btn-close { background: #e74c3c; }
+
+        /* Fallback print styles for Ctrl+P */
+        @media print {
+            body > *:not(#receipt-modal) { display: none !important; }
+            body { background: white; height: auto; overflow: visible; }
+            #receipt-modal {
+                display: block !important; position: absolute !important;
+                top: 0 !important; left: 0 !important; width: 100% !important;
+                height: auto !important; background: white !important;
+                z-index: 9999; padding: 0 !important;
+            }
+            .receipt-content { box-shadow: none; border: none; width: 100% !important; max-width: 100% !important; }
+            .btn-group, .btn-print, .btn-action { display: none !important; }
+        }
+
+        .footer-note { text-align: center; font-size: 12px; color: #95a5a6; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Fresh Bakery</h2>
+        <p class="subtitle">Quick Order & Delivery Management</p>
+        
+        <div class="menu-section">
+            <div class="item">
+                <div class="item-info">
+                    <span class="item-name">Fresh Bread (Large)</span>
+                    <span class="item-price">$2.50</span>
+                </div>
+                <div class="qty-controls">
+                    <button class="btn-qty" onclick="changeQty('Bread', 2.50, -1)">-</button>
+                    <span id="qty-Bread">0</span>
+                    <button class="btn-qty" onclick="changeQty('Bread', 2.50, 1)">+</button>
+                </div>
+            </div>
+
+            <div class="item">
+                <div class="item-info">
+                    <span class="item-name">Chocolate Croissant</span>
+                    <span class="item-price">$3.00</span>
+                </div>
+                <div class="qty-controls">
+                    <button class="btn-qty" onclick="changeQty('Croissant', 3.00, -1)">-</button>
+                    <span id="qty-Croissant">0</span>
+                    <button class="btn-qty" onclick="changeQty('Croissant', 3.00, 1)">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cart-box" class="cart-box">
+            <div class="cart-title">Order Details</div>
+            <div id="order-list"></div>
+            <div class="total-row">
+                <span>Total Amount:</span>
+                <span>$<span id="total-price">0.00</span></span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="cust-name" placeholder="Full Name for Delivery">
+            <input type="tel" id="cust-phone" placeholder="Mobile Number">
+            <input type="text" id="cust-address" placeholder="Delivery Address (Optional)">
+        </div>
+
+        <button id="submit-btn" class="btn-order" onclick="submitOrder()">SEND ORDER TO SHOP</button>
+        <p class="footer-note">✓ Your order will appear on the shop dashboard immediately.</p>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal">
+        <div class="receipt-content" id="printable-receipt">
+            <div class="receipt-header">
+                <h3 style="margin:0;">FRESH BAKERY</h3>
+                <p style="font-size:12px;">ORDER CONFIRMATION</p>
+                <p id="r-date" style="font-size:10px;"></p>
+            </div>
+            <div class="receipt-items" id="r-items">
+                <!-- Items list goes here -->
+            </div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                <span>TOTAL DUE:</span>
+                <span id="r-total"></span>
+            </div>
+            <div class="receipt-footer">
+                <p><strong>Customer:</strong> <span id="r-name"></span></p>
+                <p>Status: <strong>PAY AT COUNTER</strong></p>
+                <p style="font-size:10px;">Please show this receipt at the shop.</p>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn-action" onclick="printReceipt()">Print</button>
+                <button class="btn-action btn-download" onclick="downloadPDF()">Download PDF</button>
+                <button class="btn-action btn-close" onclick="closeReceipt()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = {};
+        let totalPrice = 0;
+        // IMPORTANT: Replace this with your newly deployed Web App URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyW7nG5mQp5fs9KzDHzm4hwjHS--m_-unJwedCsMDfXFAe30ZwyHPjQTT9pPEgcfe7X/exec";
+
+        function changeQty(name, price, delta) {
+            if (!cart[name]) cart[name] = { quantity: 0, price: price };
+            cart[name].quantity += delta;
+            if (cart[name].quantity < 0) cart[name].quantity = 0;
+            updateUI();
+        }
+
+        function updateUI() {
+            const orderList = document.getElementById('order-list');
+            const cartBox = document.getElementById('cart-box');
+            orderList.innerHTML = '';
+            totalPrice = 0;
+            let hasItems = false;
+
+            for (let name in cart) {
+                const item = cart[name];
+                document.getElementById(`qty-${name}`).innerText = item.quantity;
+                if (item.quantity > 0) {
+                    hasItems = true;
+                    const itemTotal = item.quantity * item.price;
+                    totalPrice += itemTotal;
+                    const row = document.createElement('div');
+                    row.className = 'cart-row';
+                    row.innerHTML = `<span>${name} x${item.quantity}</span> <span>$${itemTotal.toFixed(2)}</span>`;
+                    orderList.appendChild(row);
+                }
+            }
+            document.getElementById('total-price').innerText = totalPrice.toFixed(2);
+            cartBox.style.display = hasItems ? 'block' : 'none';
+        }
+
+        function closeReceipt() {
+            document.getElementById('receipt-modal').style.display = 'none';
+        }
+
+        // Improved Print Function: Uses a hidden iframe to guarantee clean printing
+        function printReceipt() {
+            // 1. Get the receipt HTML
+            const content = document.getElementById('printable-receipt').innerHTML;
+            
+            // 2. Create a hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+            
+            // 3. Write content + specific print styles into the iframe
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            doc.write('<html><head><title>Print Receipt</title>');
+            doc.write('<style>');
+            doc.write('body { font-family: sans-serif; padding: 20px; text-align: center; }');
+            doc.write('.receipt-header { border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 20px; }');
+            doc.write('.receipt-items { text-align: left; font-family: monospace; margin-bottom: 20px; width: 100%; }');
+            doc.write('.receipt-footer { border-top: 2px dashed #000; padding-top: 10px; margin-top: 20px; font-size: 14px; }');
+            doc.write('.btn-group { display: none !important; }'); // Crucial: Hide buttons in print
+            doc.write('</style>');
+            doc.write('</head><body>');
+            doc.write(content); // Inject the receipt HTML
+            doc.write('</body></html>');
+            doc.close();
+
+            // 4. Trigger print
+            setTimeout(function() {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                // Remove iframe after printing
+                setTimeout(function() {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            }, 500);
+        }
+
+        // PDF Download Function
+        function downloadPDF() {
+            const element = document.getElementById('printable-receipt');
+            const opt = {
+                margin:       [0.5, 0.5], // top, left margins
+                filename:     'Bakery_Receipt.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 }, // Higher scale = better resolution
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Temporarily hide buttons for the PDF capture
+            const btnGroup = document.querySelector('.btn-group');
+            btnGroup.style.display = 'none';
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restore buttons after PDF is generated
+                btnGroup.style.display = 'flex';
+            });
+        }
+
+        async function submitOrder() {
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value;
+            const btn = document.getElementById('submit-btn');
+
+            if(!name || !phone) { alert("Please enter Name and Phone Number."); return; }
+            if(totalPrice === 0) { alert("Please add items first."); return; }
+
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+
+            let orderItems = [];
+            let receiptHtml = "";
+            for(let name in cart) {
+                if(cart[name].quantity > 0) {
+                    const lineTotal = (cart[name].quantity * cart[name].price).toFixed(2);
+                    orderItems.push(`${name}(x${cart[name].quantity})`);
+                    receiptHtml += `<div style="display:flex; justify-content:space-between;">
+                        <span>${name} x${cart[name].quantity}</span>
+                        <span>$${lineTotal}</span>
+                    </div>`;
+                }
+            }
+
+            const orderData = new URLSearchParams();
+            orderData.append("name", name);
+            orderData.append("phone", phone);
+            orderData.append("address", address);
+            orderData.append("items", orderItems.join(", "));
+            orderData.append("total", totalPrice.toFixed(2));
+
+            try {
+                // IMPORTANT: 'no-cors' mode is opaque. We assume success if no network error.
+                await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    body: orderData,
+                    mode: 'no-cors' 
+                });
+
+                // Show Receipt Modal
+                document.getElementById('r-name').innerText = name;
+                document.getElementById('r-total').innerText = "$" + totalPrice.toFixed(2);
+                document.getElementById('r-items').innerHTML = receiptHtml;
+                document.getElementById('r-date').innerText = new Date().toLocaleString();
+                document.getElementById('receipt-modal').style.display = 'flex';
+                
+                // Reset form
+                cart = {};
+                document.querySelectorAll('[id^="qty-"]').forEach(el => el.innerText = "0");
+                updateUI();
+                document.getElementById('cust-name').value = "";
+                document.getElementById('cust-phone').value = "";
+                document.getElementById('cust-address').value = "";
+            } catch (e) {
+                console.error(e);
+                alert("Submit failed. Make sure your SCRIPT_URL is correct.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "SEND ORDER TO SHOP";
+            }
+        }
+    </script>
+</body>
+</html>
