@@ -315,25 +315,36 @@
         }
 
         // PDF Download Function
-        function downloadPDF() {
-            const element = document.getElementById('printable-receipt');
-            const opt = {
-                margin:       [0.5, 0.5], // top, left margins
-                filename:     'Bakery_Receipt.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 }, // Higher scale = better resolution
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
+function downloadPDF() {
+    const element = document.getElementById('printable-receipt');
+    const modal = document.getElementById('receipt-modal');
+    
+    const opt = {
+        margin:       [0.5, 0.5], // top, left margins
+        filename:     'Bakery_Receipt.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+            scale: 2, // Higher scale = better resolution
+            scrollY: 0, // CRITICAL: Ignores background scroll position to prevent clipping
+            windowHeight: element.scrollHeight + 100 // CRITICAL: Forces enough canvas height
+        }, 
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
 
-            // Temporarily hide buttons for the PDF capture
-            const btnGroup = document.querySelector('.btn-group');
-            btnGroup.style.display = 'none';
+    // Temporarily hide buttons for the PDF capture
+    const btnGroup = document.querySelector('.btn-group');
+    btnGroup.style.display = 'none';
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Restore buttons after PDF is generated
-                btnGroup.style.display = 'flex';
-            });
-        }
+    // Temporarily switch modal from 'fixed' to 'absolute' to guarantee full capture
+    const originalPosition = modal.style.position;
+    modal.style.position = 'absolute';
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Restore buttons and modal position after PDF is generated
+        btnGroup.style.display = 'flex';
+        modal.style.position = originalPosition;
+    });
+}
 
         async function submitOrder() {
             const name = document.getElementById('cust-name').value;
