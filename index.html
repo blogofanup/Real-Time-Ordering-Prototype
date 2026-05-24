@@ -184,6 +184,7 @@
                 <h3 style="margin:0;">FRESH BAKERY</h3>
                 <p style="font-size:12px;">ORDER CONFIRMATION</p>
                 <p id="r-date" style="font-size:10px;"></p>
+                <p id="r-token" style="font-weight:bold; font-size:16px; margin: 5px 0; color: #27ae60;"></p>
             </div>
             <div class="receipt-items" id="r-items">
                 <!-- Items list goes here -->
@@ -343,19 +344,21 @@
             orderData.append("total", totalPrice.toFixed(2));
 
             try {
-                // IMPORTANT: 'no-cors' mode is opaque. We assume success if no network error.
-                await fetch(SCRIPT_URL, { 
-                    method: 'POST', 
-                    body: orderData,
-                    mode: 'no-cors' 
-                });
+    // 1. Generate the token on the frontend
+    const generatedToken = "T-" + Math.floor(1000 + Math.random() * 9000);
+    orderData.append("token", generatedToken);
 
-                // Show Receipt Modal
-                document.getElementById('r-name').innerText = name;
-                document.getElementById('r-total').innerText = "$" + totalPrice.toFixed(2);
-                document.getElementById('r-items').innerHTML = receiptHtml;
-                document.getElementById('r-date').innerText = new Date().toLocaleString();
-                document.getElementById('receipt-modal').style.display = 'flex';
+    // IMPORTANT: 'no-cors' mode is opaque. We assume success if no network error.
+    await fetch(SCRIPT_URL, { method: 'POST', body: orderData, mode: 'no-cors' });
+    
+    // 2. Show Receipt Modal with the new Token
+    document.getElementById('r-token').innerText = "Token: " + generatedToken;
+    document.getElementById('r-name').innerText = name;
+    document.getElementById('r-total').innerText = "$" + totalPrice.toFixed(2);
+    document.getElementById('r-items').innerHTML = receiptHtml;
+    document.getElementById('r-date').innerText = new Date().toLocaleString();
+    
+    document.getElementById('receipt-modal').style.display = 'flex';
                 
                 // Reset form
                 cart = {};
