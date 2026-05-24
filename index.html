@@ -150,6 +150,29 @@
                     <span class="item-name">Chocolate Croissant</span>
                     <span class="item-price">$3.00</span>
                 </div>
+                <div class="item">
+    <div class="item-info">
+        <span class="item-name">Blueberry Muffin</span>
+        <span class="item-price">$2.00</span>
+    </div>
+    <div class="qty-controls">
+        <button class="btn-qty" onclick="changeQty('Muffin', 2.00, -1)">-</button>
+        <span id="qty-Muffin">0</span>
+        <button class="btn-qty" onclick="changeQty('Muffin', 2.00, 1)">+</button>
+    </div>
+</div>
+
+<div class="item">
+    <div class="item-info">
+        <span class="item-name">Hot Coffee</span>
+        <span class="item-price">$1.50</span>
+    </div>
+    <div class="qty-controls">
+        <button class="btn-qty" onclick="changeQty('Coffee', 1.50, -1)">-</button>
+        <span id="qty-Coffee">0</span>
+        <button class="btn-qty" onclick="changeQty('Coffee', 1.50, 1)">+</button>
+    </div>
+</div>
                 <div class="qty-controls">
                     <button class="btn-qty" onclick="changeQty('Croissant', 3.00, -1)">-</button>
                     <span id="qty-Croissant">0</span>
