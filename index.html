@@ -141,7 +141,7 @@
             <div id="order-list"></div>
             <div class="total-row">
                 <span>Total Amount:</span>
-                <span>$<span id="total-price">0.00</span></span>
+                <span>₹<span id="total-price">0.00</span></span>
             </div>
         </div>
 
@@ -324,7 +324,7 @@ function downloadPDF() {
                     orderItems.push(`${name}(x${cart[name].quantity})`);
                     receiptHtml += `<div style="display:flex; justify-content:space-between;">
                         <span>${name} x${cart[name].quantity}</span>
-                        <span>$${lineTotal}</span>
+                        <span>₹${lineTotal}</span>
                     </div>`;
                 }
             }
@@ -347,7 +347,7 @@ function downloadPDF() {
     // 2. Show Receipt Modal with the new Token
     document.getElementById('r-token').innerText = "Token: " + generatedToken;
     document.getElementById('r-name').innerText = name;
-    document.getElementById('r-total').innerText = "$" + totalPrice.toFixed(2);
+    document.getElementById('r-total').innerText = "₹" + totalPrice.toFixed(2);
     document.getElementById('r-items').innerHTML = receiptHtml;
     document.getElementById('r-date').innerText = new Date().toLocaleString();
     
@@ -424,7 +424,7 @@ async function loadMenu() {
                 <div class="item-info" style="flex-grow: 1;">
                     <span style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;">${item.category}</span>
                     <span class="item-name">${item.name}</span>
-                    <span class="item-price">$${priceNum.toFixed(2)}</span>
+                    <span class="item-price">₹${priceNum.toFixed(2)}</span>
                 </div>
                 <div class="qty-controls">
                     <button class="btn-qty" onclick="changeQty('${item.name}', ${priceNum}, -1)">-</button>
