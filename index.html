@@ -230,6 +230,9 @@
             </div>
         </div>
     </div>
+    <button onclick="sendToWhatsApp()" style="background-color: #25D366; color: white; border: none; padding: 12px; margin-top: 15px; cursor: pointer; border-radius: 5px; font-weight: bold; width: 100%; font-size: 16px;">
+    💬 Send Order to WhatsApp
+</button>
 
     <script>
         let cart = {};
@@ -410,6 +413,34 @@ function downloadPDF() {
                 btn.innerText = "SEND ORDER TO SHOP";
             }
         }
+        // Function to send order details to WhatsApp
+function sendToWhatsApp() {
+    // REPLACE THIS with your actual 10-digit number (keep the 91 for India)
+    const bakeryWhatsAppNumber = "918900482833"; 
+    
+    // Grab the order details right off the receipt
+    const token = document.getElementById('r-token').innerText;
+    const name = document.getElementById('r-name').innerText;
+    const total = document.getElementById('r-total').innerText;
+    
+    // Format the items text nicely (removes the HTML layout tags)
+    const itemsRaw = document.getElementById('r-items').innerText;
+    const itemsClean = itemsRaw.replace(/\n/g, ' | '); 
+
+    // Draft the automated message
+    const message = `🍞 *New Bakery Order!*\n\n` +
+                    `*${token}*\n` +
+                    `*Customer:* ${name}\n` +
+                    `*Items:* ${itemsClean}\n` +
+                    `*Total Due:* ${total}\n\n` +
+                    `I just submitted this order on your website. Please confirm!`;
+
+    // Encode the text so it works in a web link
+    const whatsappUrl = `https://wa.me/${bakeryWhatsAppNumber}?text=${encodeURIComponent(message)}`;
+
+    // Open WhatsApp in a new tab or the mobile app
+    window.open(whatsappUrl, '_blank');
+}
     </script>
 </body>
 </html>
