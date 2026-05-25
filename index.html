@@ -218,7 +218,7 @@
                     totalPrice += itemTotal;
                     const row = document.createElement('div');
                     row.className = 'cart-row';
-                    row.innerHTML = `<span>${name} x${item.quantity}</span> <span>$${itemTotal.toFixed(2)}</span>`;
+                    row.innerHTML = `<span>${name} x${item.quantity}</span> <span>₹${itemTotal.toFixed(2)}</span>`;
                     orderList.appendChild(row);
                 }
             }
