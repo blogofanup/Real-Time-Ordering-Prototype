@@ -129,57 +129,11 @@
 <body>
 
     <div class="card">
-        <h2>Fresh Bakery</h2>
+        <h2>Fresh Bakery & Grocery</h2>
         <p class="subtitle">Quick Order & Delivery Management</p>
         
-        <div class="menu-section">
-    <div class="item">
-        <div class="item-info">
-            <span class="item-name">Fresh Bread (Large)</span>
-            <span class="item-price">$2.50</span>
-        </div>
-        <div class="qty-controls">
-            <button class="btn-qty" onclick="changeQty('Bread', 2.50, -1)">-</button>
-            <span id="qty-Bread">0</span>
-            <button class="btn-qty" onclick="changeQty('Bread', 2.50, 1)">+</button>
-        </div>
-    </div>
-
-    <div class="item">
-        <div class="item-info">
-            <span class="item-name">Chocolate Croissant</span>
-            <span class="item-price">$3.00</span>
-        </div>
-        <div class="qty-controls">
-            <button class="btn-qty" onclick="changeQty('Croissant', 3.00, -1)">-</button>
-            <span id="qty-Croissant">0</span>
-            <button class="btn-qty" onclick="changeQty('Croissant', 3.00, 1)">+</button>
-        </div>
-    </div>
-
-    <div class="item">
-        <div class="item-info">
-            <span class="item-name">Blueberry Muffin</span>
-            <span class="item-price">$2.00</span>
-        </div>
-        <div class="qty-controls">
-            <button class="btn-qty" onclick="changeQty('Muffin', 2.00, -1)">-</button>
-            <span id="qty-Muffin">0</span>
-            <button class="btn-qty" onclick="changeQty('Muffin', 2.00, 1)">+</button>
-        </div>
-    </div>
-
-    <div class="item">
-        <div class="item-info">
-            <span class="item-name">Hot Coffee</span>
-            <span class="item-price">$1.50</span>
-        </div>
-        <div class="qty-controls">
-            <button class="btn-qty" onclick="changeQty('Coffee', 1.50, -1)">-</button>
-            <span id="qty-Coffee">0</span>
-            <button class="btn-qty" onclick="changeQty('Coffee', 1.50, 1)">+</button>
-        </div>
-    </div>
+       <div id="dynamic-menu" class="menu-section">
+    <p style="text-align: center; color: #7f8c8d;">Loading fresh menu from shop...</p>
 </div>
 
         <div id="cart-box" class="cart-box">
@@ -442,6 +396,53 @@ function sendToWhatsApp() {
     // Open WhatsApp in a new tab or the mobile app
     window.open(whatsappUrl, '_blank');
 }
+// Function to load the menu directly from Google Sheets
+async function loadMenu() {
+    try {
+        // Fetch the data from your Apps Script URL
+        const response = await fetch(SCRIPT_URL);
+        const items = await response.json();
+        
+        const menuContainer = document.getElementById('dynamic-menu');
+        menuContainer.innerHTML = ''; // Clear the "Loading..." text
+
+        if(items.error) {
+            menuContainer.innerHTML = '<p style="color:red; text-align:center;">Error loading menu.</p>';
+            return;
+        }
+
+        // Loop through your spreadsheet items and build the HTML layout
+        items.forEach(item => {
+            // Make sure the price is treated as a math number
+            const priceNum = parseFloat(item.price);
+            
+            // Build the HTML for each item, including the Postimages URL if you provided one
+            const itemHtml = `
+            <div class="item" style="display: flex; align-items: center; gap: 15px; padding: 15px 0;">
+                ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">` : ''}
+                
+                <div class="item-info" style="flex-grow: 1;">
+                    <span style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; font-weight: bold;">${item.category}</span>
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-price">$${priceNum.toFixed(2)}</span>
+                </div>
+                <div class="qty-controls">
+                    <button class="btn-qty" onclick="changeQty('${item.name}', ${priceNum}, -1)">-</button>
+                    <span id="qty-${item.name}">0</span>
+                    <button class="btn-qty" onclick="changeQty('${item.name}', ${priceNum}, 1)">+</button>
+                </div>
+            </div>
+            `;
+            menuContainer.innerHTML += itemHtml;
+        });
+    } catch (error) {
+        console.error("Failed to load menu:", error);
+        document.getElementById('dynamic-menu').innerHTML = '<p style="text-align:center;">Failed to load menu. Please refresh.</p>';
+    }
+}
+
+// Automatically run this function as soon as the page loads!
+window.onload = loadMenu;        
     </script>
 </body>
 </html>
